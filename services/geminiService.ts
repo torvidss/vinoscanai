@@ -2,9 +2,18 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { WineData } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Inicialização tardia (lazy) para evitar crash se process.env não estiver pronto
+let aiInstance: GoogleGenAI | null = null;
+
+const getAI = () => {
+  if (!aiInstance) {
+    aiInstance = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  }
+  return aiInstance;
+};
 
 export const analyzeWineLabel = async (base64Image: string): Promise<WineData> => {
+  const ai = getAI();
   const prompt = `VOCÊ É UM SISTEMA DE OCR E SOMMELIER ESPECIALISTA COM ACESSO À INTERNET.
   
   ETAPA 1: OCR E IDENTIFICAÇÃO VISUAL

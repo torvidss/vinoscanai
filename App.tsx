@@ -118,46 +118,70 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
+    console.log("App mounted. Starting Auth check...");
     let mounted = true;
 
+    // Watchdog mais curto (4s) para forçar saída da tela de Splash em caso de erro silencioso
     const watchdog = setTimeout(() => {
       if (mounted && isAuthChecking) {
+        console.warn("Watchdog: Auth check timeout. Moving to Login.");
         setIsAuthChecking(false);
         setScreen(Screen.LOGIN);
       }
-    }, 8000);
+    }, 4000);
 
     const handleSession = async (session: any) => {
       if (!mounted) return;
       
-      if (session?.user) {
-        await fetchUserProfile(session.user.id, session.user.email!);
-        if (mounted) {
-          setIsAuthChecking(false);
-          setScreen(Screen.HOME);
+      try {
+        if (session?.user) {
+          console.log("Session found for:", session.user.email);
+          await fetchUserProfile(session.user.id, session.user.email!);
+          if (mounted) {
+            setIsAuthChecking(false);
+            setScreen(Screen.HOME);
+          }
+        } else {
+          console.log("No session found. Moving to Login.");
+          if (mounted) {
+            setIsAuthChecking(false);
+            setScreen(Screen.LOGIN);
+            setUser(null);
+          }
         }
-      } else {
+      } catch (err) {
+        console.error("Error handling session:", err);
         if (mounted) {
           setIsAuthChecking(false);
           setScreen(Screen.LOGIN);
-          setUser(null);
         }
       }
     };
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      handleSession(session);
-    });
+    // Verificação de segurança: Supabase pode falhar se URL/KEY estiverem zoadas no ambiente
+    try {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        handleSession(session);
+      }).catch(err => {
+        console.error("Supabase getSession promise error:", err);
+        handleSession(null);
+      });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      handleSession(session);
-    });
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+        handleSession(session);
+      });
 
-    return () => {
-      mounted = false;
-      clearTimeout(watchdog);
-      subscription?.unsubscribe();
-    };
+      return () => {
+        mounted = false;
+        clearTimeout(watchdog);
+        subscription?.unsubscribe();
+      };
+    } catch (err) {
+      console.error("Fatal error during auth initialization:", err);
+      setIsAuthChecking(false);
+      setScreen(Screen.LOGIN);
+      return () => { mounted = false; };
+    }
   }, []);
 
   const fetchUserProfile = async (userId: string, email: string) => {
@@ -166,6 +190,7 @@ export default function App() {
       
       let finalProfile = profile;
       if (error || !profile) {
+        console.log("Creating new profile for:", email);
         const { data: newProfile, error: insertError } = await supabase.from('profiles')
           .insert([{ id: userId, email, name: email.split('@')[0], scan_count: 0, favorites: [], preferences: { preferredTypes: [], favoriteGrapes: [], preferredRegions: [], priceRange: 'Standard' } }])
           .select().single();
@@ -189,7 +214,7 @@ export default function App() {
       
       return true;
     } catch (e) {
-      console.error("Erro fatal no perfil:", e);
+      console.error("Erro fatal no fetchUserProfile:", e);
       setUser({
         name: email.split('@')[0],
         email: email,
@@ -288,7 +313,7 @@ export default function App() {
         return user ? (
           <HomeScreen user={user} onScan={() => setScreen(Screen.CAMERA)} onUpload={() => uploadInputRef.current?.click()} onNavigate={setScreen} onOpenGuide={g => { setSelectedGuide(g); setScreen(Screen.GUIDE_DETAIL); }} />
         ) : (
-          <SplashScreen />
+          <LoginScreen onAuth={handleAuth} loading={loading} />
         );
       case Screen.CAMERA: return <CameraScreen onCapture={processImage} onCancel={() => setScreen(Screen.HOME)} onUpload={() => uploadInputRef.current?.click()} />;
       case Screen.LOADING: return <LoadingScreen message={loadingMsg} />;
@@ -330,6 +355,7 @@ const SplashScreen = () => (
     </div>
     <h1 className="serif text-4xl font-bold mt-10 tracking-tighter text-white/90">VinoScan</h1>
     <p className="text-white/20 text-[10px] uppercase font-black tracking-[0.5em] mt-4">Sommelier Inteligente</p>
+    <div className="mt-8 text-white/10 text-[8px] animate-pulse">Estabelecendo conexão segura...</div>
   </div>
 );
 
