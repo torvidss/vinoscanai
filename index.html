@@ -7,6 +7,10 @@
     <title>VinoScan AI | Sommelier Privado</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        // Shim para evitar erro de 'process is not defined' no navegador
+        window.process = window.process || { env: {} };
+    </script>
     <style>
         :root {
             --burgundy: #5C0A0A;
@@ -76,5 +80,7 @@
 </head>
 <body>
     <div id="root"></div>
+    <!-- Entry point crucial para o funcionamento do app -->
+    <script type="module" src="index.tsx"></script>
 </body>
 </html>
