@@ -1,0 +1,7 @@
+{
+  "name": "VinoScan AI",
+  "description": "Premium wine label scanner using advanced AI and computer vision for instant wine identification and expert insights.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
