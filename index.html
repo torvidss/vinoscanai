@@ -2,25 +2,30 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>VinoScan AI | Sommelier Privado</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script>
-        // Shim robusto para evitar erro de 'process is not defined'
-        window.process = { env: { API_KEY: "" } };
+        // Inicialização segura do ambiente
+        window.process = window.process || { env: { API_KEY: "" } };
         
-        // Capturador de erros para diagnóstico na tela preta
+        // Diagnóstico de Produção: Captura erros antes do React montar
         window.onerror = function(msg, url, line, col, error) {
-            console.error("Erro Crítico Detectado:", msg, error);
+            console.error("ERRO CRÍTICO NO DEPLOY:", {msg, url, line, col, error});
             const root = document.getElementById('root');
-            if (root && root.innerHTML === "") {
+            if (root && (root.innerHTML === "" || root.innerHTML.includes('Iniciando'))) {
                 root.innerHTML = `
-                    <div style="background: #000; color: #fff; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; font-family: sans-serif; text-align: center;">
-                        <h1 style="color: #5C0A0A;">Falha na Inicialização</h1>
-                        <p style="opacity: 0.6;">Ocorreu um erro ao carregar os módulos do sistema.</p>
-                        <code style="background: #111; padding: 10px; border-radius: 5px; font-size: 12px; max-width: 100%; overflow-x: auto;">${msg}</code>
-                        <button onclick="location.reload()" style="margin-top: 20px; background: #5C0A0A; color: white; border: none; padding: 10px 20px; border-radius: 5px;">Recarregar App</button>
+                    <div style="background: #050505; color: #fff; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; font-family: 'Inter', sans-serif; text-align: center;">
+                        <div style="background: #5C0A0A; padding: 20px; border-radius: 20px; margin-bottom: 20px;">
+                             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        </div>
+                        <h1 style="font-size: 24px; margin-bottom: 10px; font-family: 'Playfair Display', serif;">Erro de Carregamento</h1>
+                        <p style="opacity: 0.5; font-size: 14px; margin-bottom: 30px;">Não foi possível iniciar os módulos da aplicação no servidor atual.</p>
+                        <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; font-family: monospace; font-size: 11px; text-align: left; max-width: 100%; overflow-x: auto; margin-bottom: 30px; border: 1px solid rgba(255,255,255,0.1);">
+                            ${msg}<br>@ ${line}:${col}
+                        </div>
+                        <button onclick="location.reload()" style="background: #fff; color: #000; border: none; padding: 12px 30px; border-radius: 50px; font-weight: bold; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Tentar Novamente</button>
                     </div>
                 `;
             }
@@ -54,6 +59,7 @@
             color: var(--text-primary);
             -webkit-tap-highlight-color: transparent;
             overflow-x: hidden;
+            margin: 0;
             transition: background-color 0.4s ease, color 0.4s ease;
         }
 
@@ -71,25 +77,32 @@
 
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Garantir que o root ocupe toda a tela para evitar flash de cor */
+        #root { min-height: 100vh; }
     </style>
     <script type="importmap">
 {
   "imports": {
     "react": "https://esm.sh/react@^19.2.3",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react-dom": "https://esm.sh/react-dom@^19.2.3",
+    "react-dom/client": "https://esm.sh/react-dom@^19.2.3/client",
     "react/": "https://esm.sh/react@^19.2.3/",
     "@google/genai": "https://esm.sh/@google/genai@^1.35.0",
     "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.48.1",
-    "express": "https://esm.sh/express@^5.2.1",
-    "stripe": "https://esm.sh/stripe@^20.1.2",
-    "dotenv": "https://esm.sh/dotenv@^17.2.3"
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.48.1"
   }
 }
 </script>
 </head>
 <body>
-    <div id="root"></div>
+    <div id="root">
+        <!-- Loader inicial para evitar tela preta absoluta durante o download dos módulos -->
+        <div style="background: #050505; height: 100vh; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+            <div style="width: 40px; height: 40px; border: 2px solid rgba(255,255,255,0.05); border-top-color: #5C0A0A; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+            <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+        </div>
+    </div>
     <script type="module" src="index.tsx"></script>
 </body>
 </html>

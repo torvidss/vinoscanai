@@ -3,5 +3,11 @@
   "description": "Premium wine label scanner using advanced AI and computer vision for instant wine identification and expert insights.",
   "requestFramePermissions": [
     "camera"
+  ],
+  "permissions": [
+    "android.permission.CAMERA",
+    "android.permission.READ_EXTERNAL_STORAGE",
+    "android.permission.WRITE_EXTERNAL_STORAGE",
+    "android.permission.INTERNET"
   ]
 }
